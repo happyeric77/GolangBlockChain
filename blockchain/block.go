@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"crypto/sha256"
 	"log"
 	"encoding/gob"
 	"bytes"
@@ -10,14 +11,24 @@ import (
 // Block struct 
 type Block struct {
 	Hash []byte
-	Data []byte
+	Transactions []*Transaction
 	PrevHash []byte
 	Nonce int
 }
 
+func (b *Block) HashTransactions() []byte {	
+	var txHashes [][]byte
+	var txHash [32]byte
+	for _, tx := range b.Transactions{
+		txHashes = append(txHashes, tx.ID )
+	}
+	txHash = sha256.Sum256(bytes.Join(txHashes, []byte{}))
+	return txHash[:]
+}
+
 // CreateBlock function allows to create a new block
-func CreateBlock(data string, prevHash []byte) *Block {
-	block := &Block{Hash: []byte{}, Data: []byte(data), PrevHash: prevHash, Nonce: 0}
+func CreateBlock(txs []*Transaction, prevHash []byte) *Block {
+	block := &Block{Hash: []byte{}, Transactions: txs, PrevHash: prevHash, Nonce: 0}
 	pow := NewProof(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash
@@ -27,8 +38,8 @@ func CreateBlock(data string, prevHash []byte) *Block {
 
 
 // Genesis function allows to create Genesis block without previous hash
-func Genesis() *Block {
-	return CreateBlock("Genesis", []byte{})
+func Genesis(coinBase *Transaction) *Block {
+	return CreateBlock([]*Transaction{coinBase}, []byte{})
 }
 
 func (b *Block) Serialize() []byte {
