@@ -73,7 +73,6 @@ func InitBlockChain(address string) *BlockChain {
 	Handle(err)
 	
 	err = db.Update(func(txn *badger.Txn) error {
-		// if _, err = txn.Get([]byte("lh")); err == badger.ErrKeyNotFound{
 			cbtx := CoinBaseTx(address, genesisData)
 			fmt.Println("No existing blockchain found")
 			genesis := Genesis(cbtx)
@@ -83,15 +82,6 @@ func InitBlockChain(address string) *BlockChain {
 			err = txn.Set([]byte("lh"), genesis.Hash)
 			
 			lastHash = genesis.Hash
-		// } else {
-		// 	item, err := txn.Get([]byte("lh"))
-		// 	Handle(err)
-		// 	// lastHash, err := item.Value()
-		// 	err = item.Value(func(val []byte) error {
-		// 		lastHash = val
-		// 		return nil
-		// 	})
-		// }
 
 		return err
 	})
