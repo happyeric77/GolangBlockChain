@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"project4/blockchain"
+	"project4/wallet"
 )
 
 func TestBlcokChain(t *testing.T){
@@ -45,8 +47,6 @@ func TestBlcokChain(t *testing.T){
 		balanceYuko += output.Value
 	}
 	t.Log("Yuko's balance Before TXN: $", balanceYuko)
-	
-
 	// txn := blockchain.NewTransaction("Eric", "Yuko", 30, chain)
 
 	// chain.AddBlock([]*blockchain.Transaction{txn,})
@@ -64,4 +64,35 @@ func TestBlcokChain(t *testing.T){
 	// 	balanceYuko1 += output.Value
 	// }
 	// t.Log("Yuko's balance Before TXN: $", balanceYuko1)
+
+}
+
+func TestWallet(t *testing.T){
+	w := wallet.MakeWallet()
+	w.Address()
+}
+
+func TestWallets(t *testing.T){
+	// ws := make(map[string]*wallet.Wallet)
+	// wallets := wallet.Wallets{ws}
+	// wallets.SaveFile()
+
+	wallets, err := wallet.CreateWallets()
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(wallets.Wallets)
+
+	wallet := wallet.MakeWallet()
+	// address := fmt.Sprintf("%s", wallet.Address())
+	address := string(wallet.Address())
+	t.Log(address)	
+	wallets.Wallets[address] = wallet
+	// wallets.SaveFile()
+	allAdd := wallets.GetAllWalletAddress()
+	t.Log(allAdd)
+
+	wl := wallets.GetWallet("1GML7sbwk6rqDvG2DsgnNBSYRsi33KbWyf")
+	t.Log(fmt.Sprintf("pubKey of Wallet:\n%x", wl.PublicKey))
 }
