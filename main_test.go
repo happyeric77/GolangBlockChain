@@ -55,10 +55,12 @@ func TestBlockChain(t *testing.T){
 	w := wallets.GetWallet("1Cz47VHmAhyNCuQuJKFQ4MXJETLUk1j4JU")
 	w2 := wallets.GetWallet("1DZjBsAcuWwDpfCLcAm15jgsSh9Amm33gQ")
 
+
 	/*============= 
 		Step 1.0: 
 		If no blockchain, init one  
 	=============*/
+	// address := "1Cz47VHmAhyNCuQuJKFQ4MXJETLUk1j4JU"
 	// chain := blockchain.InitBlockChain(address)
 
 	/*=============
@@ -66,6 +68,12 @@ func TestBlockChain(t *testing.T){
 		If blockchain exists, retrieve it 
 	=============*/
 	chain := blockchain.ContinueBlockChain("")
+
+	/*=============
+		Step 1.2:
+		Create a persistence layer UTXOSet
+	=============*/
+	UTXO := blockchain.UTXOSet{chain}
 
 	/* =============
 		Step 1.2: 
@@ -98,12 +106,20 @@ func TestBlockChain(t *testing.T){
 		count ++
 	}	
 
+
 	/*============= 
-		Step 3:
+		Step 3.1:
+		Reindex the UTXOSet persistence layer
+	=============*/
+	UTXO.Reindex()
+
+	/*============= 
+		Step 3.2:
 		Get the balance of wallet #1 
 	=============*/
 	pubKeyHash := wallet.PublicKeyHash(w.PublicKey)
-	UTXOs := chain.FindUTXOs(pubKeyHash)
+	UTXOs := UTXO.FindUTXO(pubKeyHash)
+
 	balance := 0
 	for _, output := range UTXOs {
 		balance += output.Value
@@ -115,7 +131,7 @@ func TestBlockChain(t *testing.T){
 		Get the balance of wallet #2 
 	=============*/
 	pubKeyHash2 := wallet.PublicKeyHash(w2.PublicKey)
-	UTXOsYuko := chain.FindUTXOs(pubKeyHash2)
+	UTXOsYuko := UTXO.FindUTXO(pubKeyHash2)
 	balanceYuko := 0
 	for _, output := range UTXOsYuko {
 		balanceYuko += output.Value
@@ -129,5 +145,7 @@ func TestBlockChain(t *testing.T){
 	// txn := blockchain.NewTransaction(string(w.Address()), string(w2.Address()), 30, chain)
 	// chain.AddBlock([]*blockchain.Transaction{txn,})
 	t.Log("========== Test Block Chain Section Finsh Line ============")
+
+
 }
 

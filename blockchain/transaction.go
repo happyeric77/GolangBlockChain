@@ -28,7 +28,7 @@ func CoinBaseTx(to, data string) *Transaction {
 	input := TxInput{[]byte{}, -1, nil, []byte(data)}
 	output := NewOutput(100, to)
 	tx := Transaction{nil, []TxInput{input}, []TxOutput{*output}}
-	tx.SetID()
+	tx.ID = tx.Hash()
 	return &tx
 }
 
@@ -42,22 +42,13 @@ func (tx *Transaction) Serialize() []byte {
 
 func (tx *Transaction) Hash() []byte {
 	var hash [32]byte
-	tx.ID = []byte{}
-	hash = sha256.Sum256(tx.Serialize())
+	txCopy := *tx
+	txCopy.ID = []byte{}
+	hash = sha256.Sum256(txCopy.Serialize())
 	return hash[:]
 }
 
-func (tx *Transaction) SetID() {
-	var encoded bytes.Buffer
-	var hash [32]byte
-	encoder := gob.NewEncoder(&encoded)
-	err := encoder.Encode(tx)
-	Handle(err)
-	hash = sha256.Sum256(encoded.Bytes())
-	tx.ID = hash[:]
-}
-
-func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction {
+func NewTransaction(from, to string, amount int, UTXO *UTXOSet) *Transaction {
 	var inputs []TxInput
 	var outputs []TxOutput
 
@@ -66,7 +57,7 @@ func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction
 	w := wallets.GetWallet(from)
 	pubKeyHash := wallet.PublicKeyHash(w.PublicKey)
 
-	acc, validOutputs := chain.FindSpendableOutputs(pubKeyHash, amount)
+	acc, validOutputs := UTXO.FindSpendableOutputs(pubKeyHash, amount)
 
 	if acc < amount {
 		log.Panic("Error! Not enough fund!")
@@ -88,9 +79,9 @@ func NewTransaction(from, to string, amount int, chain *BlockChain) *Transaction
 		}
 	}
 
-	tx := Transaction{[]byte{}, inputs, outputs}
-	tx.Hash()
-	chain.SignTransaction(&tx, w.PrivateKey)
+	tx := Transaction{nil, inputs, outputs}
+	tx.ID = tx.Hash()
+	UTXO.Blockchain.SignTransaction(&tx, w.PrivateKey)
 
 	return &tx
 }

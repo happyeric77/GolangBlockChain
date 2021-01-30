@@ -21,6 +21,7 @@ func (cli *CommandLine) PrintUsage(){
 	fmt.Println("send -from FROM -to TO -amount AMOUNT: send amount of coins")
 	fmt.Println("createwallet: Create a new wallet")
 	fmt.Println("listaddresses: List all addresses in the wallet file")
+	fmt.Println("reindexutxo: Rebuilds the UTXOSet")
 }
 
 func (cli *CommandLine) validateArgs() {
@@ -28,6 +29,15 @@ func (cli *CommandLine) validateArgs() {
 		cli.PrintUsage()
 		runtime.Goexit()
 	}
+}
+
+func (cli *CommandLine) reindexUTXO() {
+	chain := blockchain.ContinueBlockChain("")
+	defer chain.Database.Close()
+	UTXOSet := blockchain.UTXOSet{chain}
+	UTXOSet.Reindex()
+	count := UTXOSet.CountTransactions()
+	fmt.Printf("Done! There are %d transactions in UTXOSet\n", count)
 }
 
 func (cli *CommandLine) listAddresses() {
@@ -79,6 +89,10 @@ func (cli *CommandLine) createBlockChain(address string) {
 	}
 	chain := blockchain.InitBlockChain(address)
 	defer chain.Database.Close()
+
+	UTXOSet := blockchain.UTXOSet{chain}
+	UTXOSet.Reindex()
+
 	fmt.Println("New block chain created")
 }
 
@@ -88,11 +102,12 @@ func (cli *CommandLine) getBalance(address string) {
 	}
 	chain := blockchain.ContinueBlockChain(address)
 	defer chain.Database.Close()
-	
+	UTXOSet := blockchain.UTXOSet{chain}
+
 	balance := 0	
 	pubKeyHash := wallet.Base58Decode([]byte(address))
 	pubKeyHash = pubKeyHash[1:len(pubKeyHash)-4]
-	UTXOs := chain.FindUTXOs(pubKeyHash)
+	UTXOs := UTXOSet.FindUTXO(pubKeyHash)
 	for _, output := range UTXOs {
 		balance += output.Value
 	}
@@ -107,9 +122,12 @@ func (cli *CommandLine) send (from, to string, amount int) {
 		log.Panic("Address is not valid")
 	}
 	chain := blockchain.ContinueBlockChain("")
-	txn := blockchain.NewTransaction(from, to, amount, chain)
+	defer chain.Database.Close()
+	UTXOSet := blockchain.UTXOSet{chain}
+	txn := blockchain.NewTransaction(from, to, amount, &UTXOSet)
 
-	chain.AddBlock([]*blockchain.Transaction{txn,})
+	block := chain.AddBlock([]*blockchain.Transaction{txn,})
+	UTXOSet.Update(block)
 	fmt.Println("Success!")
 }
 
@@ -122,6 +140,7 @@ func (cli *CommandLine) Run(){
 	printChainCmd := flag.NewFlagSet("print", flag.ExitOnError)
 	createWalletCmd := flag.NewFlagSet("createwallet", flag.ExitOnError)
 	listAddressesCmd := flag.NewFlagSet("listaddresses", flag.ExitOnError)
+	reindexUTXOCmd := flag.NewFlagSet("reindexutxo", flag.ExitOnError)
 
 	getBalanceAddress := getBalanceCmd.String("address", "", "Get the balance for the address" )
 	createBlockChainAddress := createBlockChainCmd.String("address", "", "Creates a blockchain and sends genesis reward to address")
@@ -130,6 +149,12 @@ func (cli *CommandLine) Run(){
 	sendAmount := sendCmd.Int("amount", 0, "Amount to send")
 	
 	switch os.Args[1] {
+	case "reindexutxo":
+		err := reindexUTXOCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
+
 	case "listaddresses":
 		err := listAddressesCmd.Parse(os.Args[2:])
 		if err != nil {
@@ -160,6 +185,10 @@ func (cli *CommandLine) Run(){
 	default:
 		cli.PrintUsage()
 		runtime.Goexit()
+	}
+
+	if reindexUTXOCmd.Parsed(){
+		cli.reindexUTXO()
 	}
 
 	if getBalanceCmd.Parsed(){
