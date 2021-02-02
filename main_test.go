@@ -4,6 +4,7 @@ import (
 	"testing"
 	"project4/blockchain"
 	"project4/wallet"
+	"math/rand"
 )
 
 
@@ -146,6 +147,41 @@ func TestBlockChain(t *testing.T){
 	// chain.AddBlock([]*blockchain.Transaction{txn,})
 	t.Log("========== Test Block Chain Section Finsh Line ============")
 
+}
 
+func TestMerkleTree(t *testing.T) {
+
+	genBytes := func(n, byteCount int) [][]byte{
+		genByteCount := byteCount
+		byteDatas := make([][]byte, 0, 0)
+		for i := 0; i < genByteCount; i ++ {
+			byteData := make([]byte, n)
+			_, err := rand.Read(byteData)
+			if err != nil {
+				t.Error(err)
+			}
+			byteDatas = append(byteDatas, byteData)
+		}
+		return byteDatas
+	}
+	t.Log(genBytes(3,5))
+	txCount := 7 // How many transactions in the block
+
+	tree := blockchain.NewMerkleTree(genBytes(3,txCount))
+	t.Log(tree.RootNode.Left)
+	nodes := []blockchain.MerkleNode{*tree.RootNode}
+	for {
+		
+		var levelNodes []blockchain.MerkleNode
+		for _, node := range nodes {
+			levelNodes = append(levelNodes, *node.Left)
+			levelNodes = append(levelNodes, *node.Right)
+		}
+		nodes = levelNodes
+		if len(nodes) == txCount || len(nodes) == txCount + 1{
+			break
+		}
+	}
+	t.Logf("PASSED. tx count: %d, %d of nodes in the Merkle tree.\n", txCount, len(nodes))
 }
 

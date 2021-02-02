@@ -112,8 +112,6 @@ func ContinueBlockChain(address string) *BlockChain {
 			lastHash = val
 			return nil
 		})
-
-
 		return err
 	})
 	Handle(err)
@@ -215,6 +213,10 @@ func (bc *BlockChain) SignTransaction(tx *Transaction, private ecdsa.PrivateKey)
 }
 
 func (bc *BlockChain) VerifyTransaction(tx *Transaction) bool {
+	if tx.IsCoinBase() {
+		return true
+	}
+
 	prevTXs := make(map[string]Transaction) 
 	for _, in := range tx.Inputs {
 		prevTX, err := bc.FindTransaction(in.ID)

@@ -121,7 +121,7 @@ func (u *UTXOSet) Update(block *Block) {
 						outs := DeserializeOutputs(val)
 						for outIdx, out := range outs.Outputs {
 							if outIdx != in.Out {
-								updatedOutputs.Outputs = append(updatedOutputs. Outputs, out)
+								updatedOutputs.Outputs = append(updatedOutputs.Outputs, out)
 							}
 						}
 						if len(updatedOutputs.Outputs) == 0 {
@@ -135,7 +135,6 @@ func (u *UTXOSet) Update(block *Block) {
 						}
 						return nil
 					})
-
 				}
 			}
 			newOutputs := TxOutputs{}
@@ -202,7 +201,3 @@ func (u *UTXOSet) DeleteByPrefix(prefix []byte) {
 	})
 	Handle(err)
 }
-
-
-
-
